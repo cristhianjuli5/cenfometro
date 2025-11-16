@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronómetro para Presentaciones</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            transition: background 0.5s;
+            background-image: url('https://static.challengeplace.com/2023/8/7/1/competitor/1747c74d-3491-4f01-b3b3-31652ff6a27d.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: -1;
+            transition: background 0.5s;
+        }
+        
+        body.bg-warning::before {
+            background: rgba(120, 53, 15, 0.7);
+        }
+        
+        body.bg-danger::before {
+            background: rgba(127, 29, 29, 0.7);
+        }
+
+        .container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .settings-panel {
+            background: rgba(31, 41, 55, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+            border: 1px solid rgba(55, 65, 81, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            color: white;
+            font-size: 2em;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            color: #d1d5db;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        select {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            background: #374151;
+            color: white;
+            border: 1px solid #4b5563;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        button {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .timer-screen {
+            display: none;
+            text-align: center;
+            width: 100%;
+        }
+
+        .timer-display {
+            font-size: 10em;
+            font-weight: bold;
+            margin-bottom: 30px;
+            letter-spacing: 10px;
+            transition: color 0.3s;
+            text-shadow: 0 0 20px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.6);
+        }
+
+        .warning-text {
+            font-size: 2em;
+            color: #ef4444;
+            font-weight: bold;
+            margin-bottom: 30px;
+            animation: pulse 1s infinite;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8), 0 0 20px rgba(239, 68, 68, 0.5);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .progress-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto 40px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #1f2937;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 1s linear, background 0.3s;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .controls button {
+            width: auto;
+            padding: 15px 30px;
+            margin: 0;
+        }
+
+        .btn-green {
+            background: #16a34a;
+            color: white;
+        }
+
+        .btn-green:hover {
+            background: #15803d;
+        }
+
+        .btn-yellow {
+            background: #ca8a04;
+            color: white;
+        }
+
+        .btn-yellow:hover {
+            background: #a16207;
+        }
+
+        .btn-gray {
+            background: #4b5563;
+            color: white;
+        }
+
+        .btn-gray:hover {
+            background: #374151;
+        }
+
+
+
+        .text-green {
+            color: #10b981;
+        }
+
+        .text-yellow {
+            color: #eab308;
+        }
+
+        .text-red {
+            color: #ef4444;
+        }
+
+        @media (max-width: 768px) {
+            .timer-display {
+                font-size: 6em;
+            }
+            
+            .controls button {
+                padding: 12px 20px;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body class="bg-normal">
+    <div class="container">
+        <!-- Panel de configuración -->
+        <div id="settings" class="settings-panel">
+            <h1>Configurar Cronómetro</h1>
+            
+            <div class="form-group">
+                <label>Duración de la presentación</label>
+                <select id="totalTime">
+                    <option value="60">1 minuto</option>
+                    <option value="120">2 minutos</option>
+                    <option value="180">3 minutos</option>
+                    <option value="300" selected>5 minutos</option>
+                    <option value="420">7 minutos</option>
+                    <option value="600">10 minutos</option>
+                    <option value="900">15 minutos</option>
+                    <option value="1200">20 minutos</option>
+                    <option value="1800">30 minutos</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Advertencia cuando queden</label>
+                <select id="warningTime">
+                    <option value="30">30 segundos</option>
+                    <option value="60" selected>1 minuto</option>
+                    <option value="90">1:30 minutos</option>
+                    <option value="120">2 minutos</option>
+                    <option value="180">3 minutos</option>
+                </select>
+            </div>
+
+            <button class="btn-primary" onclick="startTimer()">
+                ▶ Iniciar Cronómetro
+            </button>
+        </div>
+
+        <!-- Pantalla del cronómetro -->
+        <div id="timerScreen" class="timer-screen">
+            <div id="timerDisplay" class="timer-display text-green">5:00</div>
+            
+            <div id="warningMessage" style="display: none;" class="warning-text">
+                ⚠️ ¡TIEMPO LIMITADO! ⚠️
+            </div>
+
+            <div id="endMessage" style="display: none;" class="warning-text">
+                ⏰ ¡TIEMPO TERMINADO! ⏰
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill" style="width: 100%; background: #3b82f6;"></div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="playPauseBtn" class="btn-green" onclick="togglePlayPause()">
+                    ▶ Iniciar
+                </button>
+                <button class="btn-gray" onclick="resetTimer()">
+                    ↻ Reiniciar
+                </button>
+                <button class="btn-primary" onclick="showSettings()">
+                    ⚙ Configurar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let totalTime = 300;
+        let timeLeft = 300;
+        let warningTime = 60;
+        let isRunning = false;
+        let interval = null;
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return mins + ':' + (secs < 10 ? '0' : '') + secs;
+        }
+
+        function updateDisplay() {
+            const display = document.getElementById('timerDisplay');
+            const progressFill = document.getElementById('progressFill');
+            const warningMsg = document.getElementById('warningMessage');
+            const endMsg = document.getElementById('endMessage');
+            const body = document.body;
+
+            display.textContent = formatTime(timeLeft);
+
+            // Actualizar barra de progreso
+            const percentage = (timeLeft / totalTime) * 100;
+            progressFill.style.width = percentage + '%';
+
+            // Cambiar colores según el tiempo
+            if (percentage > 33) {
+                display.className = 'timer-display text-green';
+                progressFill.style.background = '#3b82f6';
+                body.className = 'bg-normal';
+            } else if (percentage > 16) {
+                display.className = 'timer-display text-yellow';
+                progressFill.style.background = '#eab308';
+                body.className = 'bg-warning';
+            } else {
+                display.className = 'timer-display text-red';
+                progressFill.style.background = '#ef4444';
+                body.className = 'bg-danger';
+            }
+
+            // Mostrar advertencia
+            if (timeLeft <= warningTime && timeLeft > 0) {
+                warningMsg.style.display = 'block';
+                body.className = 'bg-danger';
+            } else {
+                warningMsg.style.display = 'none';
+            }
+
+            // Mostrar mensaje final
+            if (timeLeft === 0) {
+                endMsg.style.display = 'block';
+                warningMsg.style.display = 'none';
+            } else {
+                endMsg.style.display = 'none';
+            }
+        }
+
+        function playSound() {
+            try {
+                // Crear un beep usando Web Audio API
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Primer beep
+                const oscillator1 = audioContext.createOscillator();
+                const gainNode1 = audioContext.createGain();
+                
+                oscillator1.connect(gainNode1);
+                gainNode1.connect(audioContext.destination);
+                
+                oscillator1.frequency.value = 1000; // Frecuencia más alta
+                oscillator1.type = 'square'; // Sonido más fuerte
+                
+                gainNode1.gain.setValueAtTime(0.5, audioContext.currentTime);
+                gainNode1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator1.start(audioContext.currentTime);
+                oscillator1.stop(audioContext.currentTime + 0.3);
+                
+                // Segundo beep más fuerte
+                setTimeout(() => {
+                    const oscillator2 = audioContext.createOscillator();
+                    const gainNode2 = audioContext.createGain();
+                    
+                    oscillator2.connect(gainNode2);
+                    gainNode2.connect(audioContext.destination);
+                    
+                    oscillator2.frequency.value = 1200;
+                    oscillator2.type = 'square';
+                    
+                    gainNode2.gain.setValueAtTime(0.5, audioContext.currentTime);
+                    gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    
+                    oscillator2.start(audioContext.currentTime);
+                    oscillator2.stop(audioContext.currentTime + 0.3);
+                }, 300);
+                
+                // Tercer beep cuando termina
+                if (timeLeft === 0) {
+                    setTimeout(() => {
+                        const oscillator3 = audioContext.createOscillator();
+                        const gainNode3 = audioContext.createGain();
+                        
+                        oscillator3.connect(gainNode3);
+                        gainNode3.connect(audioContext.destination);
+                        
+                        oscillator3.frequency.value = 1400;
+                        oscillator3.type = 'square';
+                        
+                        gainNode3.gain.setValueAtTime(0.6, audioContext.currentTime);
+                        gainNode3.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                        
+                        oscillator3.start(audioContext.currentTime);
+                        oscillator3.stop(audioContext.currentTime + 0.5);
+                    }, 600);
+                }
+            } catch (error) {
+                console.log('Error al reproducir sonido:', error);
+                // Alternativa: usar alert si el sonido falla
+                alert('¡ALERTA DE TIEMPO!');
+            }
+        }
+
+        function tick() {
+            timeLeft--;
+            
+            if (timeLeft === warningTime) {
+                playSound();
+            }
+            
+            if (timeLeft <= 0) {
+                timeLeft = 0;
+                playSound();
+                pause();
+            }
+            
+            updateDisplay();
+        }
+
+        function startTimer() {
+            totalTime = parseInt(document.getElementById('totalTime').value);
+            warningTime = parseInt(document.getElementById('warningTime').value);
+            timeLeft = totalTime;
+            
+            document.getElementById('settings').style.display = 'none';
+            document.getElementById('timerScreen').style.display = 'block';
+            
+            updateDisplay();
+            play();
+        }
+
+        function play() {
+            if (!isRunning && timeLeft > 0) {
+                isRunning = true;
+                interval = setInterval(tick, 1000);
+                document.getElementById('playPauseBtn').innerHTML = '⏸ Pausar';
+                document.getElementById('playPauseBtn').className = 'btn-yellow';
+            }
+        }
+
+        function pause() {
+            isRunning = false;
+            clearInterval(interval);
+            document.getElementById('playPauseBtn').innerHTML = '▶ Iniciar';
+            document.getElementById('playPauseBtn').className = 'btn-green';
+        }
+
+        function togglePlayPause() {
+            if (isRunning) {
+                pause();
+            } else {
+                play();
+            }
+        }
+
+        function resetTimer() {
+            pause();
+            timeLeft = totalTime;
+            updateDisplay();
+        }
+
+        function showSettings() {
+            pause();
+            document.getElementById('timerScreen').style.display = 'none';
+            document.getElementById('settings').style.display = 'block';
+            document.body.className = 'bg-normal';
+        }
+    </script>
+</body>
+</html>
